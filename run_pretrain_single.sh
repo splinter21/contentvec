@@ -3,15 +3,14 @@
 expdir=./tmp
 mkdir -p $expdir
 
-
-HYDRA_FULL_ERROR=1 python -u ./fairseq/fairseq_cli/hydra_train.py  \
+python -u ./fairseq/fairseq_cli/hydra_train.py  \
     --config-dir ./contentvec/config/contentvec \
     --config-name contentvec \
     hydra.run.dir=${expdir} \
-    task.data=./metadata \
-    task.label_dir=./label \
+    task.data=/home/bfloat16/contentvec/data/metadata \
+    task.label_dir=/home/bfloat16/contentvec/data/label \
     task.labels=["km"] \
-    task.spk2info=./spk2info.dict \
+    task.spk2info=/home/bfloat16/contentvec/data/spk2info.dict \
     task.crop=true \
     dataset.train_subset=train \
     dataset.valid_subset=valid \
@@ -26,4 +25,5 @@ HYDRA_FULL_ERROR=1 python -u ./fairseq/fairseq_cli/hydra_train.py  \
     model.extractor_mode="default" \
     optimization.update_freq=[1] \
     optimization.max_update=100000 \
-    lr_scheduler.warmup_updates=8000 
+    lr_scheduler.warmup_updates=8000 \
+    distributed_training.nprocs_per_node=8 \

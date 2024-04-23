@@ -1,49 +1,52 @@
-# ContentVec: An Improved Self-Supervised Speech Representation by Disentangling Speakers 
-
-This repository provides the official PyTorch implementation of [ContentVec](https://arxiv.org/abs/2204.09224).
-
-This is a short video that explains the main concepts of our work. If you find this work useful and use it in your research, please consider citing our paper.
-
-[![ContentVec](./assets/cover.png)](https://youtu.be/aiGp1g-dCY4)
-
-## Cite this paper
-https://proceedings.mlr.press/v162/qian22b.html
-
-
-## Pre-trained models
-The legacy model only contains the representation module, which may be loaded using plain fairseq installation without setting up this code repo.
-
-|Model | Classes |  |
-|---|---|---|
-|ContentVec_legacy | 100 | [download](https://ibm.box.com/s/t76fff0dciyjqt1db03y48323qp99bg9)
-|ContentVec | 100 | [download](https://ibm.box.com/s/oxly542k5v3bhkfw6g8esatxziarymam)
-|ContentVec_legacy | 500 | [download](https://ibm.box.com/s/z1wgl1stco8ffooyatzdwsqn2psd9lrr)
-|ContentVec | 500 | [download](https://ibm.box.com/s/nv35hsry0v2y595etzysgnn2amsxxb0u)
-
-
-## Load a model
+# 1.装环境：
 ```
-ckpt_path = "/path/to/the/checkpoint_best_legacy.pt"
-models, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([ckpt_path])
-model = models[0]
+git clone https://github.com/bfloat16/contentvec
+cd contentvec
+conda create -n cvec python=3.10
+conda activate cvec
+git clone https://github.com/pytorch/fairseq
+cd fairseq
+pip install --editable ./
+python setup.py build_ext --inplace
+pip install npy_append_array tensorboardX librosa resemblyzer pyreaper praat-parselmouth
+cd ..
+rsync -a contentvec/ fairseq/fairseq/
 ```
-For detailed feature extraction steps, please refer to [Hubert](https://github.com/facebookresearch/fairseq/blob/main/examples/hubert/simple_kmeans/dump_hubert_feature.py).
+下载https://ibm.box.com/s/z1wgl1stco8ffooyatzdwsqn2psd9lrr，放入当前文件夹。
 
+# 2.处理数据
+一个说话人一个文件夹，全部放在dataset_raw文件夹内。
+```
+python 00_resampler.py
+python 01_train_valid_tsv.py
 
-## Train a new model
-### Data preparation
-Download the [zip file](https://ibm.box.com/s/zeyr94mkfs2g896oug31ml0gxv5ny43y) consisting of the following files:
-- `{train,valid}.tsv` waveform list files in metadata
-- `{train,valid}.km` frame-aligned pseudo label files in labels
-- `dict.km.txt` a dummy dictionary in labels
-- `spk2info.dict` a dictionary mapping from speaker id to speaker embedding in metadata
+python fairseq/examples/hubert/simple_kmeans/dump_hubert_feature.py "data/metadata" "train" "checkpoint_best_legacy_500.pt" 12 1 0 "data/metadata"
+python fairseq/examples/hubert/simple_kmeans/dump_hubert_feature.py "data/metadata" "valid" "checkpoint_best_legacy_500.pt" 12 1 0 "data/metadata"
 
-Modify the root directory in the `{train,valid}.tsv` waveform list files
+python fairseq/examples/hubert/simple_kmeans/learn_kmeans.py "data/metadata" "train" 1 "data/label/train_km" 500 --percent -1
+python fairseq/examples/hubert/simple_kmeans/learn_kmeans.py "data/metadata" "valid" 1 "data/label/valid_km" 500 --percent -1
 
-### Setup code repo
-Follow steps in `setup.sh` to setup the code repo
+mkdir data/label
 
-### Pretrain ContentVec
-Use `run_pretrain_single.sh` to run on a single node
+python fairseq/examples/hubert/simple_kmeans/learn_kmeans.py "data/metadata" "train" 1 "data/label/train_km" 500 --percent -1
+python fairseq/examples/hubert/simple_kmeans/learn_kmeans.py "data/metadata" "valid" 1 "data/label/valid_km" 500 --percent -1
 
-Use `run_pretrain_multi.sh` and the corresponding slurm template to run on multiple GPUs and nodes
+python fairseq/examples/hubert/simple_kmeans/dump_km_label.py "data/metadata" "train" "data/label/train_km" 1 0 "data/label"
+python fairseq/examples/hubert/simple_kmeans/dump_km_label.py "data/metadata" "valid" "data/label/valid_km" 1 0 "data/label"
+
+python 02_create_contentvec_dict.py
+```
+# 3.清理数据
+
+data/label内的train_km和valid_km删除，train_0_1.km和valid_0_1.km重命名成train.km和valid.km
+
+data/label/dict.km.txt扩展到500(已经写好了)
+
+data/metadata内的npy和len删除
+
+# 4.单机多卡训练
+
+依据卡数修改run_pretrain_single.sh里面的distributed_training.nprocs_per_node=8
+```
+./run_pretrain_single.sh
+```
