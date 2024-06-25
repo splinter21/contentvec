@@ -12,7 +12,9 @@ pip install npy_append_array tensorboardX librosa resemblyzer pyreaper praat-par
 cd ..
 rsync -a contentvec/ fairseq/fairseq/
 ```
-下载https://ibm.box.com/s/z1wgl1stco8ffooyatzdwsqn2psd9lrr，放入当前文件夹。
+https://ibm.box.com/s/z1wgl1stco8ffooyatzdwsqn2psd9lrr
+
+下载链接里面的模型，放入当前文件夹。
 
 # 2.处理数据
 一个说话人一个文件夹，全部放在dataset_raw文件夹内。
