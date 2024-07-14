@@ -207,11 +207,6 @@ class ContentvecDataset(FairseqDataset):
         #s = parselmouth.Sound(wav, sampling_frequency=sr)
         _, (lo, hi, _) = self.spk2info[spk]
         
-        if lo==50:
-            lo=75
-        if spk=="1447":
-            lo, hi = 60, 400
-        
         ratio_fs = self.rng.uniform(1, 1.4)
         coin = (self.rng.random() > 0.5)
         ratio_fs = coin*ratio_fs + (1-coin)*(1/ratio_fs)
@@ -230,17 +225,16 @@ class ContentvecDataset(FairseqDataset):
     
     def fixed_formant_f0(self, wav, sr, spk):
         #s = parselmouth.Sound(wav, sampling_frequency=sr)
-        _, (lo, hi, _) = self.spk2info[spk]
+        _, (lo, hi, mean) = self.spk2info[spk]
         
-        if lo==50:
-            lo=75
+        if mean > 200:
             ratio_fs, f0_med, ratio_pr = 1.2, 300, 1.2
         else:
             ratio_fs, f0_med, ratio_pr = 0.8, 100, 0.8
             
         ss = change_gender_f0(wav, sr, lo, hi, ratio_fs, f0_med, ratio_pr)
         
-        return ss    
+        return ss  
 
     def get_audio(self, index):
         import soundfile as sf
