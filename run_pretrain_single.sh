@@ -26,4 +26,4 @@ python -u ./fairseq/fairseq_cli/hydra_train.py  \
     optimization.update_freq=[1] \
     optimization.max_update=100000 \
     lr_scheduler.warmup_updates=8000 \
-    distributed_training.nprocs_per_node=8 \
+    distributed_training.nprocs_per_node=1 \

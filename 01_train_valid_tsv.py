@@ -20,7 +20,7 @@ def merge_dicts(dicts):
     return merged_dict
 
 if __name__ == '__main__':
-    root_dir = r'/home/bfloat16/contentvec/dataset_raw'
+    root_dir = r'D:\AI\contentvec\dataset_raw'
     num_processes = 10
 
     audio_files = []
