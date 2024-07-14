@@ -1,6 +1,6 @@
 # 1.装环境：
 ```
-git clone https://github.com/bfloat16/contentvec
+git clone --recurse-submodules https://github.com/bfloat16/contentvec
 cd contentvec
 conda create -n cvec python=3.10
 conda activate cvec
@@ -9,11 +9,10 @@ pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
 # for Linux
 pip3 install torch torchaudio
 
-git clone https://github.com/pytorch/fairseq
 cd fairseq
 pip install --editable ./
 python setup.py build_ext --inplace
-pip install npy_append_array tensorboardX librosa resemblyzer pyreaper praat-parselmouth
+pip install tensorboard tensorboardX librosa resemblyzer pyreaper praat-parselmouth
 
 cd ..
 # for windows
