@@ -1,8 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-#
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
-
 import itertools
 import logging
 import os
@@ -19,10 +14,11 @@ from fairseq.data.fairseq_dataset import FairseqDataset
 from fairseq.data.audio.audio_utils_1 import params2sos
 from fairseq.data.audio.audio_utils_1 import change_gender
 from fairseq.data.audio.audio_utils_1 import change_gender_f0
-from fairseq.pdb import set_trace
+
+from scipy.signal import sosfilt
+Qmin, Qmax = 2, 5
 
 logger = logging.getLogger(__name__)
-
 
 def load_audio(manifest_path, max_keep, min_keep):
     n_long, n_short = 0, 0
@@ -42,46 +38,28 @@ def load_audio(manifest_path, max_keep, min_keep):
                 inds.append(ind)
                 sizes.append(sz)
     tot = ind + 1
-    logger.info(
-        (
+    logger.info((
             f"max_keep={max_keep}, min_keep={min_keep}, "
             f"loaded {len(names)}, skipped {n_short} short and {n_long} long, "
-            f"longest-loaded={max(sizes)}, shortest-loaded={min(sizes)}"
-        )
-    )
+            f"longest-loaded={max(sizes)}, shortest-loaded={min(sizes)}"))
     return root, names, inds, tot, sizes
-
 
 def load_label(label_path, inds, tot):
     with open(label_path) as f:
         labels = [line.rstrip() for line in f]
-        assert (
-            len(labels) == tot
-        ), f"number of labels does not match ({len(labels)} != {tot})"
+        assert len(labels) == tot, f"number of labels does not match ({len(labels)} != {tot})"
         labels = [labels[i] for i in inds]
     return labels
-
 
 def load_label_offset(label_path, inds, tot):
     with open(label_path) as f:
         code_lengths = [len(line.encode("utf-8")) for line in f]
-        assert (
-            len(code_lengths) == tot
-        ), f"number of labels does not match ({len(code_lengths)} != {tot})"
+        assert len(code_lengths) == tot, f"number of labels does not match ({len(code_lengths)} != {tot})"
         offsets = list(itertools.accumulate([0] + code_lengths))
         offsets = [(offsets[i], offsets[i + 1]) for i in inds]
     return offsets
 
-
-def verify_label_lengths(
-    audio_sizes,
-    audio_rate,
-    label_path,
-    label_rate,
-    inds,
-    tot,
-    tol=0.1,  # tolerance in seconds
-):
+def verify_label_lengths(audio_sizes, audio_rate, label_path, label_rate, inds, tot, tol=0.1):
     if label_rate < 0:
         logger.info(f"{label_path} is sequence label. skipped")
         return
@@ -95,30 +73,12 @@ def verify_label_lengths(
         dur_from_audio = audio_sizes[i] / audio_rate
         dur_from_label = lengths[i] / label_rate
         if abs(dur_from_audio - dur_from_label) > tol:
-            logger.warning(
-                (
-                    f"audio and label duration differ too much "
-                    f"(|{dur_from_audio} - {dur_from_label}| > {tol}) "
-                    f"in line {ind+1} of {label_path}. Check if `label_rate` "
-                    f"is correctly set (currently {label_rate}). "
-                    f"num. of samples = {audio_sizes[i]}; "
-                    f"label length = {lengths[i]}"
-                )
-            )
+            logger.warning((f"audio and label duration differ too much (|{dur_from_audio} - {dur_from_label}| > {tol}) "
+                            f"in line {ind+1} of {label_path}. Check if `label_rate` is correctly set (currently {label_rate}). "
+                            f"num. of samples = {audio_sizes[i]}; label length = {lengths[i]}"))
             num_invalid += 1
     if num_invalid > 0:
-        logger.warning(
-            f"total {num_invalid} (audio, label) pairs with mismatched lengths"
-        )
-        
-
-
-import parselmouth
-import warnings
-#warnings.filterwarnings("error")
-from scipy.signal import sosfilt
-Qmin, Qmax = 2, 5
-
+        logger.warning(f"total {num_invalid} (audio, label) pairs with mismatched lengths")
 
 class ContentvecDataset(FairseqDataset):
     def __init__(
@@ -141,7 +101,7 @@ class ContentvecDataset(FairseqDataset):
         crop: bool = False,
         single_target: bool = False,
         spk2info = None
-    ):
+        ):
         self.split = manifest_path.split('/')[-1][:-4]
         assert self.split in ['train', 'valid']
         with open(spk2info, "rb") as f:
@@ -150,9 +110,7 @@ class ContentvecDataset(FairseqDataset):
         self.rng = np.random.default_rng()
         self.Fc = np.exp(np.linspace(np.log(60), np.log(7600), 10))
         
-        self.audio_root, self.audio_names, inds, tot, self.sizes = load_audio(
-            manifest_path, max_keep_sample_size, min_keep_sample_size
-        )
+        self.audio_root, self.audio_names, inds, tot, self.sizes = load_audio(manifest_path, max_keep_sample_size, min_keep_sample_size)
         self.sample_rate = sample_rate
         self.shuffle = shuffle
         self.random_crop = random_crop
@@ -163,37 +121,23 @@ class ContentvecDataset(FairseqDataset):
         self.eos_list = eos_list
         self.label_processors = label_processors
         self.single_target = single_target
-        self.label_rates = (
-            [label_rates for _ in range(len(label_paths))]
-            if isinstance(label_rates, int)
-            else label_rates
-        )
+        self.label_rates = ([label_rates for _ in range(len(label_paths))] if isinstance(label_rates, int) else label_rates)
         self.store_labels = store_labels
         if store_labels:
             self.label_list = [load_label(p, inds, tot) for p in label_paths]
         else:
             self.label_paths = label_paths
-            self.label_offsets_list = [
-                load_label_offset(p, inds, tot) for p in label_paths
-            ]
-        assert (
-            label_processors is None
-            or len(label_processors) == self.num_labels
-        )
-        for label_path, label_rate in zip(label_paths, self.label_rates):
-            verify_label_lengths(
-                self.sizes, sample_rate, label_path, label_rate, inds, tot
-            )
+            self.label_offsets_list = [load_label_offset(p, inds, tot) for p in label_paths]
 
-        self.max_sample_size = (
-            max_sample_size if max_sample_size is not None else sys.maxsize
-        )
+        assert (label_processors is None or len(label_processors) == self.num_labels)
+
+        for label_path, label_rate in zip(label_paths, self.label_rates):
+            verify_label_lengths(self.sizes, sample_rate, label_path, label_rate, inds, tot)
+
+        self.max_sample_size = (max_sample_size if max_sample_size is not None else sys.maxsize)
         self.pad_audio = pad_audio
         self.normalize = normalize
-        logger.info(
-            f"pad_audio={pad_audio}, random_crop={random_crop}, crop={crop}, "
-            f"normalize={normalize}, max_sample_size={self.max_sample_size}"
-        )
+        logger.info(f"pad_audio={pad_audio}, random_crop={random_crop}, crop={crop}, normalize={normalize}, max_sample_size={self.max_sample_size}")
         
     def random_eq(self, wav, sr):
         z = self.rng.uniform(0, 1, size=(10,))
@@ -204,7 +148,6 @@ class ContentvecDataset(FairseqDataset):
         return wav
     
     def random_formant_f0(self, wav, sr, spk):
-        #s = parselmouth.Sound(wav, sampling_frequency=sr)
         _, (lo, hi, _) = self.spk2info[spk]
         
         ratio_fs = self.rng.uniform(1, 1.4)
@@ -224,7 +167,6 @@ class ContentvecDataset(FairseqDataset):
         return ss
     
     def fixed_formant_f0(self, wav, sr, spk):
-        #s = parselmouth.Sound(wav, sampling_frequency=sr)
         _, (lo, hi, mean) = self.spk2info[spk]
         
         if mean > 200:
@@ -323,17 +265,15 @@ class ContentvecDataset(FairseqDataset):
         size = len(wav_1)
         diff = size - target_size
         if diff <= 0:
-            return wav, 0
+            return wav_1, wav_2, 0
 
         start, end = 0, target_size
         if self.random_crop:
             start = np.random.randint(0, diff + 1)
-            end = size - diff + start
+            end = target_size + start
         return wav_1[start:end], wav_2[start:end], start
 
     def collater(self, samples):
-        # target = max(sizes) -> random_crop not used
-        # target = max_sample_size -> random_crop used for long
         samples = [s for s in samples if s["source_1"] is not None]
         if len(samples) == 0:
             return {}
@@ -345,26 +285,16 @@ class ContentvecDataset(FairseqDataset):
             audio_size = min(max(audio_sizes), self.max_sample_size)
         else:
             audio_size = min(min(audio_sizes), self.max_sample_size)
-        collated_audios_1, collated_audios_2, padding_mask, audio_starts = self.collater_audio(
-            audios_1, audios_2, audio_size
-        )
+        collated_audios_1, collated_audios_2, padding_mask, audio_starts = self.collater_audio(audios_1, audios_2, audio_size)
         
         spk_embs = [s["spk_emb"] for s in samples]
         collated_embs = self.collater_speaker(spk_embs)
         
-        targets_by_label = [
-            [s["label_list"][i] for s in samples]
-            for i in range(self.num_labels)
-        ]
-        targets_list, lengths_list, ntokens_list = self.collater_label(
-            targets_by_label, audio_size, audio_starts
-        )
+        targets_by_label = [[s["label_list"][i] for s in samples] for i in range(self.num_labels)]
+        targets_list, lengths_list, ntokens_list = self.collater_label(targets_by_label, audio_size, audio_starts)
 
         net_input = {"source_1": collated_audios_1, "source_2": collated_audios_2, "padding_mask_1": padding_mask, "spk_emb": collated_embs}
-        batch = {
-            "id": torch.LongTensor([s["id"] for s in samples]),
-            "net_input": net_input,
-        }
+        batch = {"id": torch.LongTensor([s["id"] for s in samples]), "net_input": net_input}
 
         if self.single_target:
             batch["target_lengths"] = lengths_list[0]
@@ -383,10 +313,7 @@ class ContentvecDataset(FairseqDataset):
     def collater_audio(self, audios_1, audios_2, audio_size):
         collated_audios_1 = audios_1[0].new_zeros(len(audios_1), audio_size)
         collated_audios_2 = audios_2[0].new_zeros(len(audios_2), audio_size)
-        padding_mask = (
-            torch.BoolTensor(collated_audios_1.shape).fill_(False)
-            # if self.pad_audio else None
-        )
+        padding_mask = (torch.BoolTensor(collated_audios_1.shape).fill_(False))
         audio_starts = [0 for _ in audios_1]
         for i, (audio_1, audio_2) in enumerate(zip(audios_1, audios_2)):
             diff = len(audio_1) - audio_size
@@ -395,22 +322,14 @@ class ContentvecDataset(FairseqDataset):
                 collated_audios_2[i] = audio_2
             elif diff < 0:
                 assert self.pad_audio
-                collated_audios_1[i] = torch.cat(
-                    [audio_1, audio_1.new_full((-diff,), 0.0)]
-                )
-                collated_audios_2[i] = torch.cat(
-                    [audio_2, audio_2.new_full((-diff,), 0.0)]
-                )
+                collated_audios_1[i] = torch.cat([audio_1, audio_1.new_full((-diff,), 0.0)])
+                collated_audios_2[i] = torch.cat([audio_2, audio_2.new_full((-diff,), 0.0)])
                 padding_mask[i, diff:] = True
             else:
-                collated_audios_1[i], collated_audios_2[i], audio_starts[i] = self.crop_to_max_size(
-                    audio_1, audio_2, audio_size
-                )
+                collated_audios_1[i], collated_audios_2[i], audio_starts[i] = self.crop_to_max_size(audio_1, audio_2, audio_size)
         return collated_audios_1, collated_audios_2, padding_mask, audio_starts
 
-    def collater_frm_label(
-        self, targets, audio_size, audio_starts, label_rate, pad
-    ):
+    def collater_frm_label(self, targets, audio_size, audio_starts, label_rate, pad):
         assert label_rate > 0
         s2f = label_rate / self.sample_rate
         frm_starts = [int(round(s * s2f)) for s in audio_starts]
@@ -425,17 +344,13 @@ class ContentvecDataset(FairseqDataset):
 
         lengths = torch.LongTensor([len(t) for t in targets])
         ntokens = lengths.sum().item()
-        targets = data_utils.collate_tokens(
-            targets, pad_idx=pad, left_pad=False
-        )
+        targets = data_utils.collate_tokens(targets, pad_idx=pad, left_pad=False)
         return targets, lengths, ntokens
 
     def collater_seq_label(self, targets, pad):
         lengths = torch.LongTensor([len(t) for t in targets])
         ntokens = lengths.sum().item()
-        targets = data_utils.collate_tokens(
-            targets, pad_idx=pad, left_pad=False
-        )
+        targets = data_utils.collate_tokens(targets, pad_idx=pad, left_pad=False)
         return targets, lengths, ntokens
 
     def collater_label(self, targets_by_label, audio_size, audio_starts):
@@ -443,13 +358,9 @@ class ContentvecDataset(FairseqDataset):
         itr = zip(targets_by_label, self.label_rates, self.pad_list)
         for targets, label_rate, pad in itr:
             if label_rate == -1:
-                targets, lengths, ntokens = self.collater_seq_label(
-                    targets, pad
-                )
+                targets, lengths, ntokens = self.collater_seq_label(targets, pad)
             else:
-                targets, lengths, ntokens = self.collater_frm_label(
-                    targets, audio_size, audio_starts, label_rate, pad
-                )
+                targets, lengths, ntokens = self.collater_frm_label(targets, audio_size, audio_starts, label_rate, pad)
             targets_list.append(targets)
             lengths_list.append(lengths)
             ntokens_list.append(ntokens)

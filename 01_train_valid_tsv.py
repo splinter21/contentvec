@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     audio_dict = merge_dicts(results)
 
-    validation_set = random.sample(audio_files, 50)
+    validation_set = random.sample(audio_files, 100)
     training_set = [file for file in audio_files if file not in validation_set]
 
     os.makedirs('./data/metadata', exist_ok=True)

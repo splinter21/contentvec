@@ -1,8 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-#
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
-
 import logging
 from typing import Dict, List, Optional, Tuple
 
@@ -18,25 +13,16 @@ from fairseq.data.dictionary import Dictionary
 from fairseq.utils import buffered_arange, index_put, is_xla_tensor
 from fairseq.dataclass import ChoiceEnum, FairseqDataclass
 from fairseq.models import BaseFairseqModel, register_model
-from fairseq.models.wav2vec.wav2vec2_1 import (
-    ConvFeatureExtractionModel
-)
+from fairseq.models.wav2vec.wav2vec2_1 import ConvFeatureExtractionModel
 from fairseq.models.wav2vec.wav2vec2_1 import TransformerEncoder_1
 from fairseq.modules import GradMultiply, LayerNorm
-from fairseq.tasks.contentvec_pretraining import (
-    ContentvecPretrainingConfig,
-    ContentvecPretrainingTask,
-)
+from fairseq.tasks.contentvec_pretraining import ContentvecPretrainingConfig, ContentvecPretrainingTask
 from omegaconf import II
-from fairseq.pdb import set_trace
 
 logger = logging.getLogger(__name__)
 
 EXTRACTOR_MODE_CHOICES = ChoiceEnum(["default", "group_norm_masked", "layer_norm"])
-MASKING_DISTRIBUTION_CHOICES = ChoiceEnum(
-    ["static", "uniform", "normal", "poisson"]
-)
-
+MASKING_DISTRIBUTION_CHOICES = ChoiceEnum(["static", "uniform", "normal", "poisson"])
 
 @dataclass
 class ContentvecConfig(FairseqDataclass):

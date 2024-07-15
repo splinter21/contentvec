@@ -1,7 +1,6 @@
 import argparse
 from resemblyzer import VoiceEncoder, preprocess_wav
 import torch
-import random
 from os.path import join, exists
 from tqdm import tqdm
 import librosa
@@ -12,14 +11,10 @@ from torchfcpe import spawn_bundled_infer_model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def extract_embedding(filepath, encoder):
-    '''
-    Embeddings from: Generalized End-To-End Loss for Speaker Verification 
-    '''
     wav = preprocess_wav(filepath)
     file_embedding = encoder.embed_utterance(wav)
     embedding = torch.tensor(file_embedding)
     return embedding
-
 
 def process_files(filelist, root_folder):
     encoder = VoiceEncoder()
@@ -58,29 +53,24 @@ def parallel_process(filenames, root_folder, num_processes):
             tasks.append(executor.submit(process_files, file_chunk, root_folder))
         
         speaker_dict = {}
-        for task in tqdm(tasks, position=0):
+        for task in tasks:
             result = task.result()
             speaker_dict.update(result)
     return speaker_dict
 
-def generate_list_dict_from_list(filelist_train, filelist_val, root_folder, output_filepath, num_processes):
+def generate_list_dict_from_list(filelist_train, filelist_val, root_folder, num_processes):
     speaker_dict = {'train': {}, 'valid': {}}
-
-    # Process validation files in parallel
     speaker_dict['valid'] = parallel_process(filelist_val, root_folder, num_processes)
-
-    # Process training files in parallel
     speaker_dict['train'] = parallel_process(filelist_train, root_folder, num_processes)
-
     return speaker_dict
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--input_train', default="data/metadata/train.tsv")
-    parser.add_argument('-v', '--input_val', default="data/metadata/valid.tsv")
-    parser.add_argument('-d', '--dataset_dir', default="dataset_raw", help='Dataset root folder')
-    parser.add_argument('-o', '--output', default='data/spk2info.dict', help='Output folder')
-    parser.add_argument('-n', '--num_process', type=int, default=6, help='Number of processes for multiprocessing')
+    parser.add_argument('-t', '--input_train', type=str, default="data/metadata/train.tsv")
+    parser.add_argument('-v', '--input_val',   type=str, default="data/metadata/valid.tsv")
+    parser.add_argument('-d', '--dataset_dir', type=str, default="dataset_raw")
+    parser.add_argument('-o', '--output',      type=str, default='data/spk2info.dict')
+    parser.add_argument('-n', '--num_process', type=int, default=6)
     args = parser.parse_args()
 
     with open(args.input_train, "r", encoding='utf-8') as file:
@@ -91,13 +81,10 @@ def main():
         data = file.readlines()[1:]
     filelist_val = [line.split("\t")[0] for line in data]
 
-    speaker_list_dict = generate_list_dict_from_list(filelist_train, filelist_val, args.dataset_dir, args.output, args.num_process)
+    speaker_list_dict = generate_list_dict_from_list(filelist_train, filelist_val, args.dataset_dir, args.num_process)
 
     del filelist_train
     del filelist_val
 
     with open(args.output, 'wb') as file:
         pickle.dump(speaker_list_dict, file)
-
-if __name__ == "__main__":
-    main()

@@ -40,10 +40,6 @@ python 01_train_valid_tsv.py
 
 python fairseq/examples/hubert/simple_kmeans/dump_hubert_feature.py
 python fairseq/examples/hubert/simple_kmeans/learn_kmeans.py
-
-mkdir data/label
-
-python fairseq/examples/hubert/simple_kmeans/learn_kmeans.py
 python fairseq/examples/hubert/simple_kmeans/dump_km_label.py
 
 python 02_create_contentvec_dict.py
