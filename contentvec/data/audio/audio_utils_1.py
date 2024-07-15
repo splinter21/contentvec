@@ -178,7 +178,9 @@ def params2sos(G, Fc, Q, fs):
 import parselmouth
 def change_gender(x, fs, lo, hi, ratio_fs, ratio_ps, ratio_pr):
     s = parselmouth.Sound(x, sampling_frequency=fs)
-    f0 = s.to_pitch_ac(pitch_floor=lo, pitch_ceiling=hi, time_step=0.8/lo)
+    lo = max(0.9 * lo, 65)
+    hi = min(1.1 * hi, 1100)
+    f0 = s.to_pitch_ac(pitch_floor=lo, pitch_ceiling=hi, time_step=0.01, voicing_threshold = 0.6)
     f0_np = f0.selected_array['frequency']
     f0_med = np.median(f0_np[f0_np!=0]).item()
     ss = parselmouth.praat.call([s, f0], "Change gender", ratio_fs, f0_med*ratio_ps, ratio_pr, 1.0)

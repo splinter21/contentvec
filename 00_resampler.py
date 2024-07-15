@@ -2,12 +2,15 @@ import os
 import librosa
 import soundfile as sf
 import argparse
+import torch
 from glob import glob
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 from multiprocessing import Manager
+from torchaudio.transforms import Resample
 
 def process_batch(file_chunk, in_dir, out_dir, target_sr, log_queue):
+    RESAMPLE_KERNEL = {}
     for filename in tqdm(file_chunk):
         try:
             audio, sr = librosa.load(filename, sr=None, mono=True)  # 加上 mono=True 参数以加载为单声道
@@ -19,7 +22,10 @@ def process_batch(file_chunk, in_dir, out_dir, target_sr, log_queue):
                 continue
 
             if sr != target_sr:
-                audio = librosa.resample(audio, orig_sr=sr, target_sr=target_sr)
+                if sr not in RESAMPLE_KERNEL:
+                    RESAMPLE_KERNEL[sr] = Resample(sr, target_sr).to('cuda')
+                audio_torch = RESAMPLE_KERNEL[sr](torch.FloatTensor(audio).unsqueeze(0).to('cuda'))
+                audio = audio_torch.squeeze().cpu().numpy()
 
             out_audio = os.path.join(out_dir, os.path.relpath(filename, in_dir)).rsplit('.', 1)[0] + '.wav'
             os.makedirs(os.path.dirname(out_audio), exist_ok=True)

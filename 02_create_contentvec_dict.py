@@ -4,17 +4,12 @@ import torch
 import random
 from os.path import join, exists
 from tqdm import tqdm
+import librosa
 import pickle
-import parselmouth
 from concurrent.futures import ProcessPoolExecutor
+from torchfcpe import spawn_bundled_infer_model
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-def get_f0_with_parselmouth(filepath):
-    snd = parselmouth.Sound(filepath)
-    pitch = snd.to_pitch()
-    pitch_values = pitch.selected_array['frequency']
-    return pitch_values.mean(), pitch_values.max(), pitch_values.min()
 
 def extract_embedding(filepath, encoder):
     '''
@@ -25,41 +20,21 @@ def extract_embedding(filepath, encoder):
     embedding = torch.tensor(file_embedding)
     return embedding
 
-def calculate_average(speaker_dict):
-    if 'train' not in speaker_dict:
-        return {}
-
-    speaker_avg_dict = {'train': {}}
-
-    for speaker_id in speaker_dict['train']:
-        samples = speaker_dict['train'][speaker_id]
-
-        emb_avg = torch.zeros(256)
-        f0_mean_avg = 0
-        f0_max_avg = 0
-        f0_min_avg = 0
-
-        total_samples = len(samples)
-
-        for embedding, (f0_mean, f0_max, f0_min) in samples:
-            emb_avg += embedding
-            f0_mean_avg += f0_mean
-            f0_max_avg += f0_max
-            f0_min_avg += f0_min
-
-        emb_avg /= total_samples
-        f0_mean_avg /= total_samples
-        f0_max_avg /= total_samples
-        f0_min_avg /= total_samples
-
-        speaker_avg_dict['train'][speaker_id] = \
-            emb_avg.tolist(), (f0_mean_avg, f0_max_avg, f0_min_avg)
-        
-    return speaker_avg_dict 
 
 def process_files(filelist, root_folder):
     encoder = VoiceEncoder()
+    fcpe = spawn_bundled_infer_model(device=device)
+    
+    def get_f0_with_fcpe(filepath):
+        audio, sr = librosa.load(filepath, sr=None, mono=True)
+        _audio = torch.from_numpy(audio).to(device).unsqueeze(0)
+        f0 = fcpe(_audio, sr=sr, decoder_mode="local_argmax", threshold=0.006)
+        f0 = f0.squeeze().cpu().numpy()
+        f0_p = f0[f0 > 0]
+        return f0_p.min(), f0_p.max(), f0_p.mean()
+    
     speaker_dict = {}
+    
     for filepath in tqdm(filelist):        
         speaker_id = str(filepath)
         filepath = join(root_folder, filepath)
@@ -68,9 +43,8 @@ def process_files(filelist, root_folder):
             continue
 
         embedding = extract_embedding(filepath, encoder=encoder)
-        f0_mean, f0_max, f0_min = get_f0_with_parselmouth(filepath)
-        f0_mean, f0_max, f0_avg = int(f0_mean), int(f0_max), ((f0_mean + f0_max) / 2)
-        speaker_dict[speaker_id] = embedding.numpy(), (f0_mean, f0_max, f0_avg)
+        f0_min, f0_max, f0_mean = get_f0_with_fcpe(filepath)
+        speaker_dict[speaker_id] = embedding.numpy(), (f0_min, f0_max, f0_mean)
     return speaker_dict
 
 def parallel_process(filenames, root_folder, num_processes):
