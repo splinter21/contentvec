@@ -158,9 +158,7 @@ class ContentvecDataset(FairseqDataset):
         coin = (self.rng.random() > 0.5)
         ratio_ps = coin*ratio_ps + (1-coin)*(1/ratio_ps)
         
-        ratio_pr = self.rng.uniform(1, 1.5)
-        coin = (self.rng.random() > 0.5)
-        ratio_pr = coin*ratio_pr + (1-coin)*(1/ratio_pr)
+        ratio_pr = 1.0
         
         ss = change_gender(wav, sr, lo, hi, ratio_fs, ratio_ps, ratio_pr)
         
@@ -170,9 +168,9 @@ class ContentvecDataset(FairseqDataset):
         _, (lo, hi, mean) = self.spk2info[spk]
         
         if mean > 200:
-            ratio_fs, f0_med, ratio_pr = 1.2, 300, 1.2
+            ratio_fs, f0_med, ratio_pr = 1.2, 300, 1.0
         else:
-            ratio_fs, f0_med, ratio_pr = 0.8, 100, 0.8
+            ratio_fs, f0_med, ratio_pr = 0.8, 100, 1.0
             
         ss = change_gender_f0(wav, sr, lo, hi, ratio_fs, f0_med, ratio_pr)
         
