@@ -1,9 +1,11 @@
 # 1.装环境：
 ```
 git clone --recurse-submodules https://github.com/bfloat16/contentvec
+
 cd contentvec
 conda create -n cvec python=3.10
 conda activate cvec
+
 # for windows
 pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
 # for Linux
@@ -16,7 +18,7 @@ pip install tensorboard tensorboardX librosa soundfile resemblyzer torchfcpe pra
 
 cd ..
 # for windows
-robocopy contentvec fairseq\fairseq /MIR
+robocopy contentvec fairseq\fairseq /E
 # for Linux
 rsync -a contentvec/ fairseq/fairseq/
 ```
@@ -37,12 +39,11 @@ legacy系列不能用，砍掉了东西了。
 ```
 python 00_resampler.py
 python 01_train_valid_tsv.py
+python 02_create_contentvec_dict.py
 
 python fairseq/examples/hubert/simple_kmeans/dump_hubert_feature.py
 python fairseq/examples/hubert/simple_kmeans/learn_kmeans.py
 python fairseq/examples/hubert/simple_kmeans/dump_km_label.py
-
-python 02_create_contentvec_dict.py
 ```
 # 3.清理数据
 

@@ -4,3 +4,4 @@ dataset_raw
 data
 tmp
 **.pt
+**.log

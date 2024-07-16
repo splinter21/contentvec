@@ -1,8 +1,4 @@
-import os
 import numpy as np
-from scipy import signal as sg
-import pdb
-
 
 def make_lowshelf(g, fc, Q, fs=44100):
     """Generate filter coefficients for 2nd order Lowshelf filter.
@@ -41,13 +37,7 @@ def make_lowshelf(g, fc, Q, fs=44100):
     a1 = -2 * (aminus1 + aplus1 * coso)
     a2 = aplus1 + aminus1TimesCoso - beta
 
-    # output coefs 
-    #b = np.array([b0/a0, b1/a0, b2/a0])
-    #a = np.array([a0/a0, a1/a0, a2/a0])
-
     return np.array([[b0/a0, b1/a0, b2/a0, 1.0, a1/a0, a2/a0]])
-
-
 
 def make_highself(g, fc, Q, fs=44100):
     """Generate filter coefficients for 2nd order Highshelf filter.
@@ -86,13 +76,7 @@ def make_highself(g, fc, Q, fs=44100):
     a1 = 2 * (aminus1 - aplus1 * coso)
     a2 = aplus1 - aminus1TimesCoso - beta
 
-    # output coefs
-    #b = np.array([b0/a0, b1/a0, b2/a0])
-    #a = np.array([a0/a0, a1/a0, a2/a0])
-      
     return np.array([[b0/a0, b1/a0, b2/a0, 1.0, a1/a0, a2/a0]])
-
-
 
 def make_peaking(g, fc, Q, fs=44100):
     """Generate filter coefficients for 2nd order Peaking EQ.
@@ -129,14 +113,8 @@ def make_peaking(g, fc, Q, fs=44100):
     a0 = 1 + alphaOverA
     a1 = c2
     a2 = 1 - alphaOverA
-
-    # output coefs
-    #b = np.array([b0/a0, b1/a0, b2/a0])
-    #a = np.array([a0/a0, a1/a0, a2/a0])
     
     return np.array([[b0/a0, b1/a0, b2/a0, 1.0, a1/a0, a2/a0]])
-
-
 
 def params2sos(G, Fc, Q, fs):
     """Convert 5 band EQ paramaters to 2nd order sections.
@@ -171,15 +149,15 @@ def params2sos(G, Fc, Q, fs):
 
     # stuff coefficients into second order sections structure
     sos = np.concatenate([c0,c1,c2,c3,c4,c5,c6,c7,c8,c9], axis=0)
-
     return sos
-
 
 import parselmouth
 def change_gender(x, fs, lo, hi, ratio_fs, ratio_ps, ratio_pr):
     s = parselmouth.Sound(x, sampling_frequency=fs)
-    lo = max(0.9 * lo, 65)
-    hi = min(1.1 * hi * max(ratio_fs, 1), 1100)
+
+    lo = float(max(0.9 * lo, 65))
+    hi = float(min(1.1 * hi * max(ratio_fs, 1), 1100))
+    
     f0 = s.to_pitch_ac(pitch_floor=lo, pitch_ceiling=hi, time_step=0.01, voicing_threshold = 0.6)
     f0_np = f0.selected_array['frequency']
     f0_np = f0_np[f0_np!=0]
@@ -192,6 +170,5 @@ def change_gender(x, fs, lo, hi, ratio_fs, ratio_ps, ratio_pr):
 
 def change_gender_f0(x, fs, lo, hi, ratio_fs, new_f0_med, ratio_pr):
     s = parselmouth.Sound(x, sampling_frequency=fs)
-    ss = parselmouth.praat.call(s, "Change gender", lo, hi, ratio_fs, new_f0_med, ratio_pr, 1.0)
+    ss = parselmouth.praat.call(s, "Change gender", float(lo), float(hi), ratio_fs, new_f0_med, ratio_pr, 1.0)
     return ss.values.squeeze(0)
-

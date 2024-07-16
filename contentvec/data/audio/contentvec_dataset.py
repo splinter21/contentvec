@@ -384,7 +384,6 @@ class ContentvecDataset(FairseqDataset):
         return np.lexsort(order)[::-1]
 
     def postprocess(self, wav, cur_sample_rate):
-        
         if cur_sample_rate != self.sample_rate:
             raise Exception(f"sr {cur_sample_rate} != {self.sample_rate}")
 

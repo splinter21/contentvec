@@ -5,6 +5,7 @@ from os.path import join, exists
 from tqdm import tqdm
 import librosa
 import pickle
+from multiprocessing import get_context
 from concurrent.futures import ProcessPoolExecutor
 from torchfcpe import spawn_bundled_infer_model
 
@@ -38,12 +39,17 @@ def process_files(filelist, root_folder):
             continue
 
         embedding = extract_embedding(filepath, encoder=encoder)
-        f0_min, f0_max, f0_mean = get_f0_with_fcpe(filepath)
+        try:
+            f0_min, f0_max, f0_mean = get_f0_with_fcpe(filepath)
+        except Exception as e:
+            print(f"Error: {filepath}: {e}")
+            continue
         speaker_dict[speaker_id] = embedding.numpy(), (f0_min, f0_max, f0_mean)
     return speaker_dict
 
 def parallel_process(filenames, root_folder, num_processes):
-    with ProcessPoolExecutor(max_workers=num_processes) as executor:
+    context = get_context("spawn")
+    with ProcessPoolExecutor(max_workers=num_processes, mp_context=context) as executor:
         tasks = []
         chunk_size = len(filenames) // num_processes
         for i in range(num_processes):
@@ -70,7 +76,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--input_val',   type=str, default="data/metadata/valid.tsv")
     parser.add_argument('-d', '--dataset_dir', type=str, default="dataset_raw")
     parser.add_argument('-o', '--output',      type=str, default='data/spk2info.dict')
-    parser.add_argument('-n', '--num_process', type=int, default=6)
+    parser.add_argument('-n', '--num_process', type=int, default=8)
     args = parser.parse_args()
 
     with open(args.input_train, "r", encoding='utf-8') as file:

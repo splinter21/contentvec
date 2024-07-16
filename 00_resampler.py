@@ -16,7 +16,7 @@ def process_batch(file_chunk, in_dir, out_dir, target_sr, log_queue):
             audio, sr = librosa.load(filename, sr=None, mono=True)  # 加上 mono=True 参数以加载为单声道
             duration = librosa.get_duration(y=audio, sr=sr)  # 计算音频时长
 
-            if duration > 30:  # 如果音频时长超过30秒
+            if duration > 30 or duration < 1:
                 print(f"\nSkip: {filename} - Duration: {duration:.2f}s")
                 log_queue.put(f'Skip: {filename}\n')
                 continue
@@ -66,8 +66,8 @@ def get_filelist(in_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in_dir", type=str, default=r"CVEC")
-    parser.add_argument("--out_dir", type=str, default=r"CVEC_16k")
+    parser.add_argument("--in_dir", type=str, default=r"D:\CVEC")
+    parser.add_argument("--out_dir", type=str, default=r"dataset_raw")
     parser.add_argument("--target_sr", type=int, default=16000)
     parser.add_argument('--num_processes', type=int, default=16)
     args = parser.parse_args()
