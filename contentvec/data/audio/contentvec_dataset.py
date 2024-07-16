@@ -183,7 +183,6 @@ class ContentvecDataset(FairseqDataset):
     
         fileName = self.audio_names[index]
         fileLen = self.sizes[index]
-        print(1, fileName)
         spk = fileName
         wav_path = os.path.join(self.audio_root, fileName)
         wav, cur_sample_rate = sf.read(wav_path)
