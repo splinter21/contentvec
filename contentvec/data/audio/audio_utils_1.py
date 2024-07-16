@@ -183,8 +183,8 @@ def change_gender(x, fs, lo, hi, ratio_fs, ratio_ps, ratio_pr):
     f0 = s.to_pitch_ac(pitch_floor=lo, pitch_ceiling=hi, time_step=0.01, voicing_threshold = 0.6)
     f0_np = f0.selected_array['frequency']
     f0_np = f0_np[f0_np!=0]
-    if len(f0_np) > 1:
-        f0_med = np.median(f0_np[f0_np!=0]).item()
+    if len(f0_np) > 0:
+        f0_med = np.median(f0_np).item()
     else:
         f0_med = 0
     ss = parselmouth.praat.call([s, f0], "Change gender", ratio_fs, f0_med*ratio_ps, ratio_pr, 1.0)
