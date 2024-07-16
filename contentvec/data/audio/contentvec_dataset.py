@@ -154,7 +154,7 @@ class ContentvecDataset(FairseqDataset):
         coin = (self.rng.random() > 0.5)
         ratio_fs = coin*ratio_fs + (1-coin)*(1/ratio_fs)
         
-        ratio_ps = self.rng.uniform(1, 2)
+        ratio_ps = self.rng.uniform(1, 1.4)
         coin = (self.rng.random() > 0.5)
         ratio_ps = coin*ratio_ps + (1-coin)*(1/ratio_ps)
         
