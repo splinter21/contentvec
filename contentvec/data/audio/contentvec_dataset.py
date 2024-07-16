@@ -198,9 +198,9 @@ class ContentvecDataset(FairseqDataset):
             except UserWarning:
                 wav_1 = np.copy(wav)
                 print(f"Praat warining - {fileName}")
-            except RuntimeError:
+            except RuntimeError as e:
                 wav_1 = np.copy(wav)
-                print(f"Praat Error - {fileName}")
+                print(f"Praat Error - {fileName}, {e}")
             wav_1 = self.random_eq(wav_1, cur_sample_rate)
             wav_1 = torch.from_numpy(wav_1).float()
             wav_1 = self.postprocess(wav_1, cur_sample_rate)
@@ -210,9 +210,9 @@ class ContentvecDataset(FairseqDataset):
             except UserWarning:
                 wav_2 = np.copy(wav)
                 print(f"Praat warining - {fileName}")
-            except RuntimeError:
+            except RuntimeError as e:
                 wav_2 = np.copy(wav)
-                print(f"Praat Error - {fileName}")
+                print(f"Praat Error - {fileName}, {e}")
             wav_2 = self.random_eq(wav_2, cur_sample_rate)
             wav_2 = torch.from_numpy(wav_2).float()
             wav_2 = self.postprocess(wav_2, cur_sample_rate)
@@ -224,9 +224,9 @@ class ContentvecDataset(FairseqDataset):
             except UserWarning:
                 wav_2 = np.copy(wav)
                 print(f"Praat warining - {fileName}")
-            except RuntimeError:
+            except RuntimeError as e:
                 wav_2 = np.copy(wav)
-                print(f"Praat Error - {fileName}")
+                print(f"Praat Error - {fileName}, {e}")
             wav_2 = torch.from_numpy(wav_2).float()
             wav_2 = self.postprocess(wav_2, cur_sample_rate)
         else:

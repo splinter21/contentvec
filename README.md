@@ -14,7 +14,9 @@ pip3 install torch torchaudio
 cd fairseq
 pip install --editable ./
 python setup.py build_ext --inplace
-pip install tensorboard tensorboardX librosa soundfile resemblyzer torchfcpe praat-parselmouth
+pip install tensorboard tensorboardX librosa soundfile resemblyzer torchfcpe
+# parselmouth必须从whl安装！pypi上面是远古版本，有infinite loop的严重bug！
+pip install praat_parselmouth-0.5.0.dev0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 
 cd ..
 # for windows
