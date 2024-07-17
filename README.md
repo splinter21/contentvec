@@ -1,4 +1,4 @@
-# 1.装环境：
+# 1.装环境（Linux Only）：
 ```
 git clone --recurse-submodules https://github.com/bfloat16/contentvec
 
@@ -6,21 +6,17 @@ cd contentvec
 conda create -n cvec python=3.10
 conda activate cvec
 
-# for windows
-pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
-# for Linux
 pip3 install torch torchaudio
 
 cd fairseq
 pip install --editable ./
 python setup.py build_ext --inplace
 pip install tensorboard tensorboardX librosa soundfile resemblyzer torchfcpe
+
 # parselmouth必须从whl安装！pypi上面是远古版本，有infinite loop的严重bug！
 pip install praat_parselmouth-0.5.0.dev0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 
 cd ..
-# for windows
-robocopy contentvec fairseq\fairseq /E
 # for Linux
 rsync -a contentvec/ fairseq/fairseq/
 ```
