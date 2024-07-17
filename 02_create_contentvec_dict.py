@@ -5,8 +5,7 @@ from os.path import join, exists
 from tqdm import tqdm
 import librosa
 import pickle
-from multiprocessing import get_context
-from concurrent.futures import ProcessPoolExecutor
+import torch.multiprocessing as mp
 from torchfcpe import spawn_bundled_infer_model
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -17,7 +16,8 @@ def extract_embedding(filepath, encoder):
     embedding = torch.tensor(file_embedding)
     return embedding
 
-def process_files(filelist, root_folder):
+def process_files(filelist, root_folder, device):
+    torch.cuda.set_device(device)
     encoder = VoiceEncoder()
     fcpe = spawn_bundled_infer_model(device=device)
     
@@ -35,7 +35,7 @@ def process_files(filelist, root_folder):
         speaker_id = str(filepath)
         filepath = join(root_folder, filepath)
         if not exists(filepath):
-            print("file {} doesnt exist!".format(filepath))
+            print("file {} doesn't exist!".format(filepath))
             continue
 
         embedding = extract_embedding(filepath, encoder=encoder)
@@ -47,27 +47,36 @@ def process_files(filelist, root_folder):
         speaker_dict[speaker_id] = embedding.numpy(), (f0_min, f0_max, f0_mean)
     return speaker_dict
 
-def parallel_process(filenames, root_folder, num_processes):
-    context = get_context("spawn")
-    with ProcessPoolExecutor(max_workers=num_processes, mp_context=context) as executor:
-        tasks = []
-        chunk_size = len(filenames) // num_processes
-        for i in range(num_processes):
-            start = i * chunk_size
-            end = None if i == num_processes - 1 else (i + 1) * chunk_size
-            file_chunk = filenames[start:end]
-            tasks.append(executor.submit(process_files, file_chunk, root_folder))
-        
-        speaker_dict = {}
-        for task in tasks:
-            result = task.result()
-            speaker_dict.update(result)
+def worker_init(rank, filenames, root_folder, device_id, result_queue):
+    result = process_files(filenames, root_folder, device_id)
+    result_queue.put(result)
+
+def parallel_process(filenames, root_folder, num_processes, num_devices):
+    result_queue = mp.Queue()
+    chunk_size = len(filenames) // num_processes
+    processes = []
+
+    for i in range(num_processes):
+        start = i * chunk_size
+        end = None if i == num_processes - 1 else (i + 1) * chunk_size
+        file_chunk = filenames[start:end]
+        device_id = i % num_devices
+        p = mp.Process(target=worker_init, args=(i, file_chunk, root_folder, device_id, result_queue))
+        p.start()
+        processes.append(p)
+    
+    speaker_dict = {}
+    for p in processes:
+        result = result_queue.get()
+        speaker_dict.update(result)
+    for p in processes:
+        p.join()
     return speaker_dict
 
-def generate_list_dict_from_list(filelist_train, filelist_val, root_folder, num_processes):
+def generate_list_dict_from_list(filelist_train, filelist_val, root_folder, num_processes, num_devices):
     speaker_dict = {'train': {}, 'valid': {}}
-    speaker_dict['valid'] = parallel_process(filelist_val, root_folder, num_processes)
-    speaker_dict['train'] = parallel_process(filelist_train, root_folder, num_processes)
+    speaker_dict['valid'] = parallel_process(filelist_val, root_folder, num_processes, num_devices)
+    speaker_dict['train'] = parallel_process(filelist_train, root_folder, num_processes, num_devices)
     return speaker_dict
 
 if __name__ == "__main__":
@@ -77,6 +86,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dataset_dir', type=str, default="dataset_raw")
     parser.add_argument('-o', '--output',      type=str, default='data/spk2info.dict')
     parser.add_argument('-n', '--num_process', type=int, default=8)
+    parser.add_argument('-g', '--num_devices', type=int, default=6)
     args = parser.parse_args()
 
     with open(args.input_train, "r", encoding='utf-8') as file:
@@ -87,7 +97,7 @@ if __name__ == "__main__":
         data = file.readlines()[1:]
     filelist_val = [line.split("\t")[0] for line in data]
 
-    speaker_list_dict = generate_list_dict_from_list(filelist_train, filelist_val, args.dataset_dir, args.num_process)
+    speaker_list_dict = generate_list_dict_from_list(filelist_train, filelist_val, args.dataset_dir, args.num_process, args.num_devices)
 
     del filelist_train
     del filelist_val
