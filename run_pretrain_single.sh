@@ -14,7 +14,6 @@ python -u ./fairseq/fairseq_cli/hydra_train.py  \
     task.crop=true \
     dataset.train_subset=train \
     dataset.valid_subset=valid \
-    dataset.num_workers=1 \
     checkpoint.keep_best_checkpoints=10 \
     criterion.loss_weights=[10,1e-5] \
     model.label_rate=50 \
