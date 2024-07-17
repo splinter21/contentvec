@@ -1,8 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-#
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
-
 import math
 import re
 from dataclasses import dataclass, field
@@ -13,28 +8,14 @@ import torch.nn.functional as F
 from fairseq import metrics, utils
 from fairseq.criterions import FairseqCriterion, register_criterion
 from fairseq.dataclass import FairseqDataclass
-from fairseq.pdb import set_trace
 
 
 @dataclass
 class ContentvecCriterionConfig(FairseqDataclass):
-    pred_masked_weight: float = field(
-        default=1.0,
-        metadata={"help": "weight for predictive loss for masked frames"},
-    )
-    pred_nomask_weight: float = field(
-        default=0.0,
-        metadata={"help": "weight for predictive loss for unmasked frames"},
-    )
-    loss_weights: Optional[List[float]] = field(
-        default=None,
-        metadata={"help": "weights for additional loss terms (not first one)"},
-    )
-    log_keys: List[str] = field(
-        default_factory=lambda: [],
-        metadata={"help": "output keys to log"},
-    )
-
+    pred_masked_weight: float = field(default=1.0, metadata={"help": "weight for predictive loss for masked frames"})
+    pred_nomask_weight: float = field(default=0.0, metadata={"help": "weight for predictive loss for unmasked frames"})
+    loss_weights: Optional[List[float]] = field(default=None, metadata={"help": "weights for additional loss terms (not first one)"})
+    log_keys: List[str] = field(default_factory=lambda: [], metadata={"help": "output keys to log"})
 
 @register_criterion("contentvec", dataclass=ContentvecCriterionConfig)
 class ContentvecCriterion(FairseqCriterion):
