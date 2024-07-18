@@ -7,10 +7,10 @@ python -u ./fairseq/fairseq_cli/hydra_train.py  \
     --config-dir ./contentvec/config/contentvec \
     --config-name contentvec \
     hydra.run.dir=${expdir} \
-    task.data=/home/bfloat16/contentvec/data/metadata \
-    task.label_dir=/home/bfloat16/contentvec/data/label \
+    task.data=/home/m123/contentvec/data/00_filelist \
+    task.label_dir=/home/m123/contentvec/data/00_filelist \
     task.labels=["km"] \
-    task.spk2info=/home/bfloat16/contentvec/data/spk2info.dict \
+    task.spk2info=/home/m123/contentvec/data/01_spk2info.dict \
     task.crop=true \
     dataset.train_subset=train \
     dataset.valid_subset=valid \
@@ -23,4 +23,4 @@ python -u ./fairseq/fairseq_cli/hydra_train.py  \
     model.extractor_mode="default" \
     optimization.update_freq=[1] \
     lr_scheduler.warmup_updates=8000 \
-    distributed_training.nprocs_per_node=1 \
+    distributed_training.nprocs_per_node=5 \

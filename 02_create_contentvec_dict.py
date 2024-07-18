@@ -8,8 +8,6 @@ import pickle
 import torch.multiprocessing as mp
 from torchfcpe import spawn_bundled_infer_model
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 def extract_embedding(filepath, encoder):
     wav = preprocess_wav(filepath)
     file_embedding = encoder.embed_utterance(wav)
@@ -82,11 +80,11 @@ def generate_list_dict_from_list(filelist_train, filelist_val, root_folder, num_
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--input_train', type=str, default="data/metadata/train.tsv")
-    parser.add_argument('-v', '--input_val',   type=str, default="data/metadata/valid.tsv")
+    parser.add_argument('-t', '--input_train', type=str, default="data/00_filelist/train.tsv")
+    parser.add_argument('-v', '--input_val',   type=str, default="data/00_filelist/valid.tsv")
     parser.add_argument('-d', '--dataset_dir', type=str, default="dataset_raw")
-    parser.add_argument('-o', '--output',      type=str, default='data/spk2info.dict')
-    parser.add_argument('-n', '--num_process', type=int, default=8)
+    parser.add_argument('-o', '--output',      type=str, default='data/01_spk2info.dict')
+    parser.add_argument('-n', '--num_process', type=int, default=5)
     args = parser.parse_args()
 
     with open(args.input_train, "r", encoding='utf-8') as file:

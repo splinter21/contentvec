@@ -66,7 +66,7 @@ def get_filelist(in_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in_dir", type=str, default=r"D:\CVEC")
+    parser.add_argument("--in_dir", type=str, default=r"dataset_raw")
     parser.add_argument("--out_dir", type=str, default=r"dataset_raw")
     parser.add_argument("--target_sr", type=int, default=16000)
     parser.add_argument('--num_processes', type=int, default=16)
