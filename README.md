@@ -13,11 +13,11 @@ pip install --editable ./
 python setup.py build_ext --inplace
 pip install tensorboard tensorboardX librosa soundfile resemblyzer torchfcpe
 
+cd ..
+
 # parselmouth必须从whl安装！pypi上面是远古版本，有infinite loop的严重bug！
 pip install praat_parselmouth-0.5.0.dev0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 
-cd ..
-# for Linux
 rsync -a contentvec/ fairseq/fairseq/
 ```
 https://ibm.ent.box.com/s/nv35hsry0v2y595etzysgnn2amsxxb0u
@@ -31,26 +31,26 @@ legacy系列不能用，砍掉了东西了。
 先试试预测cnhubertlarge的13层，炸了再说。
 
 # 2.处理数据
-一个说话人一个文件夹，全部放在dataset_raw文件夹内。
+完全轮椅，可以不分说话人，一股脑扔进去处理就行了
 
-参数都在对应的脚本里面，打开改一下就行（注意train和valid都要跑一遍）
+所有脚本里面合理修改线程数（一般一张卡给一个线程）
+
+第5步的percent根据内存修改，不炸内存就行
 ```
 python 00_resampler.py
 python 01_train_valid_tsv.py
 python 02_create_contentvec_dict.py
-
-python fairseq/examples/hubert/simple_kmeans/dump_hubert_feature.py
-python fairseq/examples/hubert/simple_kmeans/learn_kmeans.py
-python fairseq/examples/hubert/simple_kmeans/dump_km_label.py
+python 03_dump_hubert_feature.py
+python 04_me.py
+python 05_learn_kmeans.py
+python 06_dump_km_label.py
 ```
 # 3.清理数据
-
-data/label内的train_km和valid_km删除，train_0_1.km和valid_0_1.km重命名成train.km和valid.km
-
-data/label/dict.km.txt扩展到500(已经写好了)
-
-data/metadata内的一堆npy删除
-
+```
+rm -rf data/02_metadata_npy
+rm -rf data/03_metadata_total
+rm -rf data/04_cluster
+```
 # 4.单机多卡训练
 
 依据卡数修改run_pretrain_single.sh里面的distributed_training.nprocs_per_node=8
