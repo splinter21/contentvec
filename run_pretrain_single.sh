@@ -23,4 +23,3 @@ python -u ./fairseq/fairseq_cli/hydra_train.py  \
     model.extractor_mode="default" \
     optimization.update_freq=[1] \
     lr_scheduler.warmup_updates=8000 \
-    distributed_training.nprocs_per_node=5 \

@@ -25,9 +25,11 @@ def process_npy_files(feat_dir, output_dir, split):
             file_load = np.load(file)
             feat_f.append(file_load)
             leng_f.write(f"{len(file_load)}\n")
+            os.remove(file)  # Delete the .npy file after loading its content
     
     logger.info("Finished generating feature and length files")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     process_npy_files("data/02_metadata_npy", "data/03_metadata_total", "train")
     process_npy_files("data/02_metadata_npy", "data/03_metadata_total", "valid")

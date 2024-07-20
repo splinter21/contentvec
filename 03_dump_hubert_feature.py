@@ -87,8 +87,8 @@ def main(tsv_dir, split, ckpt_path, layer, feat_dir, max_chunk, num_process):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--tsv_dir", type=str, default="data/00_filelist")
-    parser.add_argument("--ckpt_path", type=str, default="chinese-hubert-large-fairseq-ckpt.pt")
-    parser.add_argument("--layer", type=int, default=13)
+    parser.add_argument("--ckpt_path", type=str, default="checkpoint_best_legacy_500.pt")
+    parser.add_argument("--layer", type=int, default=12)
     parser.add_argument("--feat_dir", type=str, default="data/02_metadata_npy")
     parser.add_argument("--max_chunk", type=int, default=1600000)
     parser.add_argument("--num_process", type=int, default=5)  # Number of processes

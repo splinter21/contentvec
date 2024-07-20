@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from typing import Any, List, Optional, Union
-
+import librosa
 import numpy as np
 import pickle
 
@@ -177,13 +177,11 @@ class ContentvecDataset(FairseqDataset):
         return ss  
 
     def get_audio(self, index):
-        import soundfile as sf
-    
         fileName = self.audio_names[index]
         fileLen = self.sizes[index]
         spk = fileName
         wav_path = os.path.join(self.audio_root, fileName)
-        wav, cur_sample_rate = sf.read(wav_path)
+        wav, cur_sample_rate = librosa.load(wav_path, sr=None)
         if wav.ndim == 2:
             wav = wav.mean(-1)
         assert wav.ndim == 1, wav.ndim

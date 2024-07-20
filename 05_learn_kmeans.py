@@ -65,7 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("--feat_dir",           type=str,   default="data/03_metadata_total")
     parser.add_argument("--km_path",            type=str,   default="data/04_cluster")
     parser.add_argument("--n_clusters",         type=int,   default=500)
-    parser.add_argument("--percent",            type=float, default=1.0)
+    parser.add_argument("--percent",            type=float, default=0.5)
     parser.add_argument("--init",               type=str,   default="k-means++")
     parser.add_argument("--max_iter",           type=int,   default=100)
     parser.add_argument("--batch_size",         type=int,   default=10000)

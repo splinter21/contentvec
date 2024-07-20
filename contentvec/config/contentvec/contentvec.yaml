@@ -8,17 +8,13 @@ common:
   tensorboard_logdir: tblog
 
 checkpoint:
-  save_interval_updates: 2000
+  save_interval_updates: 1000
   keep_interval_updates: 5
   no_epoch_checkpoints: true
-
 
 distributed_training:
   ddp_backend: no_c10d
   distributed_backend: 'nccl'
-  distributed_world_size: 1
-  distributed_port: 29671
-  nprocs_per_node: 1
   find_unused_parameters: true
 
 task:
@@ -37,8 +33,8 @@ task:
   spk2info: ???
 
 dataset:
-  num_workers: 4
-  max_tokens: 250000
+  num_workers: 5
+  max_tokens: 450000
   skip_invalid_size_inputs_valid_test: true
   validate_interval: 5
   validate_interval_updates: 6000
@@ -51,7 +47,7 @@ criterion:
 
 optimization:
   max_update: 10000000
-  lr: [0.0005]
+  lr: [0.0002]
   clip_norm: 10.0
   update_freq: [2]
 

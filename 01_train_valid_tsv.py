@@ -38,7 +38,7 @@ if __name__ == '__main__':
     '''
     audio_dict = main(audio_files)
 
-    validation_set = random.sample(audio_files, 100)
+    validation_set = random.sample(audio_files, 1000)
     training_set = [file for file in audio_files if file not in validation_set]
 
     os.makedirs('./data/00_filelist', exist_ok=True)
