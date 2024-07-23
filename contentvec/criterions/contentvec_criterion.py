@@ -9,7 +9,6 @@ from fairseq import metrics, utils
 from fairseq.criterions import FairseqCriterion, register_criterion
 from fairseq.dataclass import FairseqDataclass
 
-
 @dataclass
 class ContentvecCriterionConfig(FairseqDataclass):
     pred_masked_weight: float = field(default=1.0, metadata={"help": "weight for predictive loss for masked frames"})

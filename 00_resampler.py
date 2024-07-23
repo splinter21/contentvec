@@ -12,7 +12,7 @@ from torchaudio.transforms import Resample
 def process_batch(rank, filelist, in_dir, out_dir, target_sr, log_queue, num_gpus):
     torch.cuda.set_device(rank % num_gpus)  # Set the device to the corresponding GPU
     RESAMPLE_KERNEL = {}
-    for filename in tqdm(filelist[rank::num_gpus]):
+    for filename in tqdm(filelist[rank::num_gpus], position=rank):
         try:
             audio, sr = librosa.load(filename, sr=None, mono=True)
             duration = librosa.get_duration(y=audio, sr=sr)
@@ -73,7 +73,7 @@ def get_filelist(in_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in_dir", type=str, default=r"/home/m123/WenetSpeech4TTS_123")
+    parser.add_argument("--in_dir", type=str, default=r"/home/m123/Dataset_16k")
     parser.add_argument("--out_dir", type=str, default=r"dataset_raw")
     parser.add_argument("--target_sr", type=int, default=16000)
     parser.add_argument('--num_gpus', type=int, default=5)

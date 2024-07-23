@@ -10,14 +10,6 @@ import torch.multiprocessing as mp
 from fairseq.data.audio.audio_utils import get_features_or_waveform
 from fairseq.checkpoint_utils import load_model_ensemble_and_task
 
-logging.basicConfig(
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    level=os.environ.get("LOGLEVEL", "INFO").upper(),
-    stream=sys.stdout,
-)
-logger = logging.getLogger("dump_hubert_feature")
-
 class HubertFeatureReader(object):
     def __init__(self, ckpt_path, layer, max_chunk, device):
         (model, cfg, task) = load_model_ensemble_and_task([ckpt_path])
@@ -26,8 +18,6 @@ class HubertFeatureReader(object):
         self.layer = layer
         self.max_chunk = max_chunk
         self.device = device
-        logger.info(f"TASK CONFIG:\n{self.task.cfg}")
-        logger.info(f" max_chunk = {self.max_chunk}, device = {self.device}")
 
     def read_audio(self, path):
         wav = get_features_or_waveform(path, need_waveform=True, use_sample_rate=self.task.cfg.sample_rate)
@@ -55,11 +45,10 @@ def process_chunk(rank, args, paths, feat_dir, split, device):
     reader = HubertFeatureReader(args['ckpt_path'], args['layer'], args['max_chunk'], device)
 
     os.makedirs(feat_dir, exist_ok=True)
-    for i, path in tqdm(enumerate(paths), total=len(paths), desc=f"Process {rank}"):
+    for i, path in tqdm(enumerate(paths), total=len(paths), position=rank):
         feat = reader.get_feats(path).cpu().numpy()
         feat_path = f"{feat_dir}/{split}_{rank:02d}_{i:07d}.npy"
         np.save(feat_path, feat)
-    logger.info("Process %d on device %s finished successfully", rank, device)
 
 def main(tsv_dir, split, ckpt_path, layer, feat_dir, max_chunk, num_process):
     tsv_path = f"{tsv_dir}/{split}.tsv"

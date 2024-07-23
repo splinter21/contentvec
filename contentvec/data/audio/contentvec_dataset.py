@@ -152,11 +152,11 @@ class ContentvecDataset(FairseqDataset):
         
         ratio_fs = self.rng.uniform(1, 1.4)
         coin = (self.rng.random() > 0.5)
-        ratio_fs = coin*ratio_fs + (1-coin)*(1/ratio_fs)
+        ratio_fs = coin*ratio_fs + (1 - coin) * (1/ratio_fs)
         
         ratio_ps = self.rng.uniform(1, 1.4)
         coin = (self.rng.random() > 0.5)
-        ratio_ps = coin*ratio_ps + (1-coin)*(1/ratio_ps)
+        ratio_ps = coin*ratio_ps + (1 - coin) * (1/ratio_ps)
         
         ratio_pr = 1.0
         
@@ -191,9 +191,9 @@ class ContentvecDataset(FairseqDataset):
             # 1st version
             try:
                 wav_1 = self.random_formant_f0(wav, cur_sample_rate, spk)
-            except UserWarning:
+            except UserWarning as e:
                 wav_1 = np.copy(wav)
-                print(f"Praat warining - {fileName}")
+                print(f"Praat Warining - {fileName}, {e}")
             except RuntimeError as e:
                 wav_1 = np.copy(wav)
                 print(f"Praat Error - {fileName}, {e}")
@@ -203,9 +203,9 @@ class ContentvecDataset(FairseqDataset):
             # 2nd version
             try:
                 wav_2 = self.random_formant_f0(wav, cur_sample_rate, spk)
-            except UserWarning:
+            except UserWarning as e:
                 wav_2 = np.copy(wav)
-                print(f"Praat warining - {fileName}")
+                print(f"Praat Warining - {fileName}, {e}")
             except RuntimeError as e:
                 wav_2 = np.copy(wav)
                 print(f"Praat Error - {fileName}, {e}")
@@ -217,9 +217,9 @@ class ContentvecDataset(FairseqDataset):
             wav_1 = self.postprocess(wav_1, cur_sample_rate)
             try:
                 wav_2 = self.fixed_formant_f0(wav, cur_sample_rate, spk)
-            except UserWarning:
+            except UserWarning as e:
                 wav_2 = np.copy(wav)
-                print(f"Praat warining - {fileName}")
+                print(f"Praat warining - {fileName}, {e}")
             except RuntimeError as e:
                 wav_2 = np.copy(wav)
                 print(f"Praat Error - {fileName}, {e}")

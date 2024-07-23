@@ -29,7 +29,7 @@ def process_files(rank, filenames, root_folder, device_id, return_dict):
     
     speaker_dict = {}
     
-    for filepath in tqdm(filenames):        
+    for filepath in tqdm(filenames, position=rank):
         speaker_id = str(filepath)
         filepath = join(root_folder, filepath)
         if not exists(filepath):
