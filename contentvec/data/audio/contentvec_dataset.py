@@ -6,7 +6,7 @@ from typing import Any, List, Optional, Union
 import librosa
 import numpy as np
 import pickle
-
+import colorednoise as cn
 import torch
 import torch.nn.functional as F
 from fairseq.data import data_utils
@@ -147,6 +147,16 @@ class ContentvecDataset(FairseqDataset):
         wav = sosfilt(sos, wav)
         return wav
     
+    def random_noise_volume(self, wav):
+        noise = cn.powerlaw_psd_gaussian(self.rng.uniform(0, 2), len(wav))
+        noise = noise * (10 ** self.rng.uniform(-6, -1))
+        wav = wav + noise
+        max_amp = np.max(np.abs(wav)) + 1e-5
+        max_shift = min(1, np.log10(1 / max_amp))
+        log10_vol_shift = self.rng.uniform(-1, max_shift)
+        wav = wav * (10 ** log10_vol_shift)
+        return wav    
+              
     def random_formant_f0(self, wav, sr, spk):
         _, (lo, hi, _) = self.spk2info[spk]
         
@@ -197,7 +207,8 @@ class ContentvecDataset(FairseqDataset):
             except RuntimeError as e:
                 wav_1 = np.copy(wav)
                 print(f"Praat Error - {fileName}, {e}")
-            wav_1 = self.random_eq(wav_1, cur_sample_rate)
+            wav_1 = self.random_noise_volume(wav_1)
+            wav_1 = self.random_eq(wav_1, cur_sample_rate)           
             wav_1 = torch.from_numpy(wav_1).float()
             wav_1 = self.postprocess(wav_1, cur_sample_rate)
             # 2nd version
@@ -209,6 +220,7 @@ class ContentvecDataset(FairseqDataset):
             except RuntimeError as e:
                 wav_2 = np.copy(wav)
                 print(f"Praat Error - {fileName}, {e}")
+            wav_2 = self.random_noise_volume(wav_2)
             wav_2 = self.random_eq(wav_2, cur_sample_rate)
             wav_2 = torch.from_numpy(wav_2).float()
             wav_2 = self.postprocess(wav_2, cur_sample_rate)
@@ -216,13 +228,15 @@ class ContentvecDataset(FairseqDataset):
             wav_1 = torch.from_numpy(wav).float()
             wav_1 = self.postprocess(wav_1, cur_sample_rate)
             try:
-                wav_2 = self.fixed_formant_f0(wav, cur_sample_rate, spk)
+                wav_2 = self.random_formant_f0(wav, cur_sample_rate, spk)
             except UserWarning as e:
                 wav_2 = np.copy(wav)
                 print(f"Praat warining - {fileName}, {e}")
             except RuntimeError as e:
                 wav_2 = np.copy(wav)
                 print(f"Praat Error - {fileName}, {e}")
+            wav_2 = self.random_noise_volume(wav_2)
+            wav_2 = self.random_eq(wav_2, cur_sample_rate)
             wav_2 = torch.from_numpy(wav_2).float()
             wav_2 = self.postprocess(wav_2, cur_sample_rate)
         else:

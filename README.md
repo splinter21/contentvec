@@ -11,7 +11,7 @@ pip3 install torch torchaudio
 cd fairseq
 pip install --editable ./
 python setup.py build_ext --inplace
-pip install tensorboard tensorboardX librosa soundfile resemblyzer torchfcpe
+pip install tensorboard tensorboardX librosa soundfile resemblyzer torchfcpe colorednoise
 
 cd ..
 
